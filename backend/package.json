@@ -4,13 +4,14 @@
   "description": "Deliberately imperfect backend for Hospital Appointment and Queue Management System",
   "main": "src/index.js",
   "scripts": {
-    "start": "prisma migrate deploy && node prisma/seed-demo-users.js && node src/index.js",
+    "start": "prisma migrate deploy && node prisma/seed-full-demo.js && node src/index.js",
     "dev": "nodemon src/index.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "node prisma/seed.js",
     "prisma:seed:demo-users": "node prisma/seed-demo-users.js",
-    "db:deploy:setup": "prisma migrate deploy && node prisma/seed-demo-users.js",
+    "prisma:seed:full-demo": "node prisma/seed-full-demo.js",
+    "db:deploy:setup": "prisma migrate deploy && node prisma/seed-full-demo.js",
     "db:setup": "prisma migrate dev && node prisma/seed.js"
   },
   "prisma": {
