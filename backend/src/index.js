@@ -57,11 +57,20 @@ app.use((err, req, res, next) => {
 });
 
 // Listen on port
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`===================================================`);
   console.log(`   HAQMS BACKEND SERVER IS RUNNING ON PORT ${PORT}`);
   console.log(`   ENVIRONMENT: ${process.env.NODE_ENV}`);
   console.log(`===================================================`);
+});
+
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`Port ${PORT} is already in use. Stop the process using it or set PORT to another value in backend/.env.`);
+    process.exit(1);
+  }
+
+  throw err;
 });
 
 // Catch unhandled rejections

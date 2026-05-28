@@ -1,30 +1,64 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { memo, useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import Navbar from '@/components/common/Navbar';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { 
   Users, CalendarDays, Activity, Search, Sparkles, UserPlus, 
   Trash2, ClipboardList, TrendingUp, DollarSign, Award, Clock,
   ArrowRight, ShieldAlert, CheckCircle, Volume2
 } from 'lucide-react';
 
+const SEARCH_DEBOUNCE_MS = 300;
+
+const DebouncedSearchInput = memo(function DebouncedSearchInput({
+  initialValue = '',
+  onCommit,
+  placeholder,
+}) {
+  const [draft, setDraft] = useState(initialValue);
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      onCommit(draft);
+    }, SEARCH_DEBOUNCE_MS);
+
+    return () => clearTimeout(timeoutId);
+  }, [draft, onCommit]);
+
+  return (
+    <div className="relative flex-1 rounded-lg shadow-sm">
+      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+        <Search className="h-4 w-4" />
+      </div>
+      <input
+        type="text"
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        placeholder={placeholder}
+        className="block w-full pl-9 pr-3 py-2 border border-slate-300 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+      />
+    </div>
+  );
+});
+
 export default function Dashboard() {
-  const { user, token, API_BASE_URL, logout } = useAuth();
+  const { user, token, loading, API_BASE_URL, logout } = useAuth();
   const router = useRouter();
 
   // Navigation Guard
   useEffect(() => {
-    if (!user) {
+    if (!loading && !user) {
       router.push('/login');
     }
-  }, [user]);
-
-  if (!user) return null;
+  }, [loading, user, router]);
 
   // Global State
-  const [activeTab, setActiveTab] = useState(user.role === 'ADMIN' ? 'reports' : user.role === 'RECEPTIONIST' ? 'patients' : 'appointments');
+  const [activeTab, setActiveTab] = useState(() => (
+    user?.role === 'ADMIN' ? 'reports' : user?.role === 'DOCTOR' ? 'appointments' : 'patients'
+  ));
 
   // ==========================================
   // STATE FOR RECEPTIONIST WORKFLOWS
@@ -67,16 +101,32 @@ export default function Dashboard() {
   const [adminReportLoading, setAdminReportLoading] = useState(false);
   const [adminSearchQuery, setAdminSearchQuery] = useState('');
 
+  const commitPatientSearch = useCallback((value) => {
+    setPatientSearch(value);
+  }, []);
+
+  const commitAdminSearch = useCallback((value) => {
+    setAdminSearchQuery(value);
+  }, []);
+
   // ==========================================
   // RECEPTIONIST FUNCTIONS
   // ==========================================
   
   // Fetch Patients List
-  const fetchPatients = async (page = 1) => {
+  const fetchPatients = useCallback(async (page = 1) => {
+    if (!user || !token) return;
+
     setPatientsLoading(true);
     try {
       // Inefficient memory pagination called from client
-      const res = await fetch(`${API_BASE_URL}/patients?page=${page}&limit=5&search=${patientSearch}&gender=${patientGender}`, {
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: '5',
+        search: patientSearch,
+        gender: patientGender,
+      });
+      const res = await fetch(`${API_BASE_URL}/patients?${params}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -93,17 +143,20 @@ export default function Dashboard() {
     } finally {
       setPatientsLoading(false);
     }
-  };
+  }, [API_BASE_URL, patientGender, patientSearch, token, user]);
 
-  // Trigger Patient List Fetch (Every keystroke trigger re-renders parent! - Performance bug)
+  // Trigger patient list fetch after debounced filter changes.
   useEffect(() => {
-    if (user.role === 'RECEPTIONIST' || user.role === 'ADMIN') {
+    if (user?.role === 'RECEPTIONIST' || user?.role === 'ADMIN') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchPatients(1);
     }
-  }, [patientSearch, patientGender]);
+  }, [fetchPatients, user?.role]);
 
   // Fetch Doctors for booking drop-down
-  const fetchDoctorsDropdown = async () => {
+  const fetchDoctorsDropdown = useCallback(async () => {
+    if (!token) return;
+
     try {
       const res = await fetch(`${API_BASE_URL}/doctors`, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -113,11 +166,14 @@ export default function Dashboard() {
     } catch (e) {
       console.error(e);
     }
-  };
+  }, [API_BASE_URL, token]);
 
   useEffect(() => {
-    fetchDoctorsDropdown();
-  }, []);
+    if (user) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      fetchDoctorsDropdown();
+    }
+  }, [fetchDoctorsDropdown, user]);
 
   // Handle Patient Registration
   const handleRegisterPatient = async (e) => {
@@ -252,8 +308,8 @@ export default function Dashboard() {
   // ==========================================
   // DOCTOR WORKFLOW FUNCTIONS
   // ==========================================
-  const fetchDoctorWorklist = async () => {
-    if (user.role !== 'DOCTOR') return;
+  const fetchDoctorWorklist = useCallback(async () => {
+    if (user?.role !== 'DOCTOR') return;
     try {
       // Find matching doctor from doctors dropdown using user ID link
       const matchedDoc = doctorsList.find(d => d.userId === user.id);
@@ -278,13 +334,13 @@ export default function Dashboard() {
     } catch (e) {
       console.error(e);
     }
-  };
+  }, [API_BASE_URL, doctorsList, token, user]);
 
   useEffect(() => {
-    if (user.role === 'DOCTOR' && doctorsList.length > 0) {
+    if (user?.role === 'DOCTOR' && doctorsList.length > 0) {
       fetchDoctorWorklist();
     }
-  }, [doctorsList]);
+  }, [doctorsList.length, fetchDoctorWorklist, user?.role]);
 
   // Update token status (WAITING -> CALLING -> COMPLETED / SKIPPED)
   const handleUpdateQueueStatus = async (tokenId, newStatus) => {
@@ -347,22 +403,25 @@ export default function Dashboard() {
     }
   };
 
-  // Search Doctors (SQL Injection vulnerable API!)
+  // Search doctors through the parameterized backend lookup.
   const searchPhysiciansAdmin = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/doctors?search=${adminSearchQuery}`, {
+      const params = new URLSearchParams({ search: adminSearchQuery });
+      const res = await fetch(`${API_BASE_URL}/doctors?${params}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
       if (Array.isArray(data)) {
         setDoctorsList(data);
       } else {
-        alert(`API Error: ${data.sqlMessage || data.error}`);
+        alert(`API Error: ${data.error || 'Failed to search physicians'}`);
       }
     } catch (e) {
       console.error(e);
     }
   };
+
+  if (loading || !user) return null;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -446,20 +505,13 @@ export default function Dashboard() {
                     Patient Lookup Directory
                   </h3>
 
-                  {/* Filters (Causes slow re-renders on keystroke) */}
+                  {/* Filters */}
                   <div className="flex gap-4 mb-6">
-                    <div className="relative flex-1 rounded-lg shadow-sm">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                        <Search className="h-4 w-4" />
-                      </div>
-                      <input
-                        type="text"
-                        value={patientSearch}
-                        onChange={(e) => setPatientSearch(e.target.value)}
-                        placeholder="Search by name, phone or email..."
-                        className="block w-full pl-9 pr-3 py-2 border border-slate-300 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
-                      />
-                    </div>
+                    <DebouncedSearchInput
+                      initialValue={patientSearch}
+                      onCommit={commitPatientSearch}
+                      placeholder="Search by name, phone or email..."
+                    />
 
                     <select
                       value={patientGender}
@@ -889,12 +941,8 @@ export default function Dashboard() {
                 <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 text-xs space-y-2">
                   <h4 className="font-bold text-slate-400 uppercase tracking-wider">Clinical Background Information</h4>
                   
-                  {/* FRONTEND CRASH BUG:
-                      Assuming medicalHistory is always populated. Accesses a method on a nullable property
-                      without optional chaining! If medicalHistory is null (which is the case for Batman, Clark Kent, etc.),
-                      this code throws: "Cannot read properties of null (reading 'toUpperCase')" and crashes the app! */}
                   <p className="text-slate-700 dark:text-slate-300 leading-5 text-sm font-semibold">
-                    {selectedPatientHistory.medicalHistory.toUpperCase()}
+                    {(selectedPatientHistory.medicalHistory?.trim() || 'No medical history recorded.').toUpperCase()}
                   </p>
                 </div>
 
@@ -1088,7 +1136,7 @@ export default function Dashboard() {
         )}
 
         {/* ==============================================================
-            TAB: PHYSICIAN REGISTRY (ADMIN ROLE - SQL INJECTION VULNERABILITY)
+            TAB: PHYSICIAN REGISTRY (ADMIN ROLE)
             ============================================================== */}
         {activeTab === 'physicians' && (
           <div className="glass p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-md space-y-6">
@@ -1098,40 +1146,33 @@ export default function Dashboard() {
                 Staff Physicians Registry Lookup
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold mt-1">
-                Database lookup for credentials. Uses a raw SQL interpolation backend query.
+                Database lookup for physician records. Search inputs are bound as query parameters on the backend.
               </p>
             </div>
 
             <div className="flex gap-4">
-              <div className="relative flex-1 rounded-lg shadow-sm">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                  <Search className="h-4 w-4" />
-                </div>
-                <input
-                  type="text"
-                  value={adminSearchQuery}
-                  onChange={(e) => setAdminSearchQuery(e.target.value)}
-                  placeholder="Enter physician name search criteria (raw syntax supported)..."
-                  className="block w-full pl-9 pr-3 py-2 border border-slate-300 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
-                />
-              </div>
+              <DebouncedSearchInput
+                initialValue={adminSearchQuery}
+                onCommit={commitAdminSearch}
+                placeholder="Enter physician name search criteria..."
+              />
 
               <button
                 onClick={searchPhysiciansAdmin}
                 className="glow-btn px-5 py-2 bg-slate-900 text-white dark:bg-teal-500 dark:text-slate-950 font-bold text-xs rounded-lg hover:bg-slate-800 dark:hover:bg-teal-400 transition-colors"
               >
-                Execute SQL Query
+                Search Physicians
               </button>
             </div>
 
-            <div className="p-3 bg-rose-500/10 text-rose-500 text-xs rounded-lg border border-rose-500/20 font-semibold leading-5 flex gap-3">
+            <div className="p-3 bg-teal-500/10 text-teal-700 dark:text-teal-300 text-xs rounded-lg border border-teal-500/20 font-semibold leading-5 flex gap-3">
               <ShieldAlert className="h-5 w-5 shrink-0" />
               <div>
-                <strong>SQL Vulnerability alert:</strong> This search executes raw interpolation: 
+                <strong>Parameterized search:</strong> User input is sent as a search parameter and bound by Prisma on the backend.
                 <code className="block bg-black/10 dark:bg-black/30 p-1.5 rounded mt-1 font-mono">
-                  SELECT * FROM &quot;Doctor&quot; WHERE name ILIKE &apos;%&#123;query&#125;%&apos;
+                  name ILIKE ${'${searchTerm}'}
                 </code>
-                Can be audited by inputting standard SQL injection strings to leak full user login lists.
+                SQL metacharacters are treated as data, not executable query text.
               </div>
             </div>
 

@@ -1,59 +1,52 @@
 const express = require('express');
 const { PrismaClient } = require('@prisma/client');
-const { authenticate, authorizeAdminOnlyLegacy } = require('../middleware/auth');
+const { authenticate, authorize } = require('../middleware/auth');
 
 const router = express.Router();
 const prisma = new PrismaClient();
 
 // GET /api/patients
-// Get all patients with search, filtering, and INEFICIENT IN-MEMORY PAGINATION
+// Get all patients with search, filtering, and SQL pagination
 router.get('/', authenticate, async (req, res) => {
   try {
     const { search, gender } = req.query;
-    
-    // Inefficient: Retrieve all matching rows without take/skip limits from the database.
-    // Scales poorly as patient directory grows.
-    const allPatients = await prisma.patient.findMany({
-      orderBy: { createdAt: 'desc' },
-    });
-
-    let filteredPatients = allPatients;
-
-    // In-memory filter for search (checks name/phone/email)
-    if (search) {
-      const query = search.toLowerCase();
-      filteredPatients = filteredPatients.filter(
-        (p) =>
-          p.name.toLowerCase().includes(query) ||
-          p.phoneNumber.includes(query) ||
-          (p.email && p.email.toLowerCase().includes(query))
-      );
-    }
-
-    // In-memory filter for gender
-    if (gender && gender !== 'All') {
-      filteredPatients = filteredPatients.filter(
-        (p) => p.gender.toLowerCase() === gender.toLowerCase()
-      );
-    }
-
-    // In-memory pagination setup
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 5;
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 5, 1), 100);
     const offset = (page - 1) * limit;
-    
-    const paginatedResult = filteredPatients.slice(offset, offset + limit);
-    const totalPages = Math.ceil(filteredPatients.length / limit);
+    const where = {};
+
+    if (search) {
+      const query = String(search);
+      where.OR = [
+        { name: { contains: query, mode: 'insensitive' } },
+        { phoneNumber: { contains: query } },
+        { email: { contains: query, mode: 'insensitive' } },
+      ];
+    }
+
+    if (gender && gender !== 'All') {
+      where.gender = { equals: String(gender), mode: 'insensitive' };
+    }
+
+    const [totalPatients, patients] = await prisma.$transaction([
+      prisma.patient.count({ where }),
+      prisma.patient.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: offset,
+        take: limit,
+      }),
+    ]);
 
     // Inconsistent Response style
     res.json({
       success: true,
-      patients: paginatedResult,
+      patients,
       pagination: {
         page,
         limit,
-        totalPatients: filteredPatients.length,
-        totalPages,
+        totalPatients,
+        totalPages: Math.ceil(totalPatients / limit),
       },
     });
   } catch (error) {
@@ -113,9 +106,7 @@ router.post('/', authenticate, async (req, res) => {
 });
 
 // DELETE /api/patients/:id
-// SECURITY BUG: The route relies on authorizeAdminOnlyLegacy, which has the bypassed admin validation check!
-// This allows any receptionist or doctor to delete a patient.
-router.delete('/:id', authenticate, authorizeAdminOnlyLegacy, async (req, res) => {
+router.delete('/:id', authenticate, authorize('ADMIN'), async (req, res) => {
   try {
     const { id } = req.params;
 

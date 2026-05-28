@@ -1,0 +1,23 @@
+1:"$Sreact.fragment"
+2:I[58652,["/_next/static/chunks/0s987c6dpavm6.js","/_next/static/chunks/0d3shmwh5_nmn.js"],"AuthProvider"]
+3:I[39756,["/_next/static/chunks/0s987c6dpavm6.js","/_next/static/chunks/0d3shmwh5_nmn.js"],"default"]
+4:I[37457,["/_next/static/chunks/0s987c6dpavm6.js","/_next/static/chunks/0d3shmwh5_nmn.js"],"default"]
+5:I[57390,["/_next/static/chunks/0s987c6dpavm6.js","/_next/static/chunks/0d3shmwh5_nmn.js","/_next/static/chunks/0f-5vbi2pcchw.js"],"default"]
+6:I[47257,["/_next/static/chunks/0s987c6dpavm6.js","/_next/static/chunks/0d3shmwh5_nmn.js"],"ClientPageRoot"]
+7:I[80810,["/_next/static/chunks/0s987c6dpavm6.js","/_next/static/chunks/0d3shmwh5_nmn.js","/_next/static/chunks/0j8avwmy8el9f.js"],"default"]
+a:I[97367,["/_next/static/chunks/0s987c6dpavm6.js","/_next/static/chunks/0d3shmwh5_nmn.js"],"OutletBoundary"]
+b:"$Sreact.suspense"
+e:I[97367,["/_next/static/chunks/0s987c6dpavm6.js","/_next/static/chunks/0d3shmwh5_nmn.js"],"ViewportBoundary"]
+10:I[97367,["/_next/static/chunks/0s987c6dpavm6.js","/_next/static/chunks/0d3shmwh5_nmn.js"],"MetadataBoundary"]
+12:I[68027,["/_next/static/chunks/0s987c6dpavm6.js","/_next/static/chunks/0d3shmwh5_nmn.js"],"default",1]
+:HL["/_next/static/chunks/0flch-i2r0m3_.css","style"]
+:HL["/_next/static/media/83afe278b6a6bb3c-s.p.0q-301v4kxxnr.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+0:{"P":null,"c":["","queue"],"q":"","i":false,"f":[[["",{"children":["queue",{"children":["__PAGE__",{}]}]},"$undefined","$undefined",16],[["$","$1","c",{"children":[[["$","link","0",{"rel":"stylesheet","href":"/_next/static/chunks/0flch-i2r0m3_.css","precedence":"next","crossOrigin":"$undefined","nonce":"$undefined"}],["$","script","script-0",{"src":"/_next/static/chunks/0s987c6dpavm6.js","async":true,"nonce":"$undefined"}],["$","script","script-1",{"src":"/_next/static/chunks/0d3shmwh5_nmn.js","async":true,"nonce":"$undefined"}]],["$","html",null,{"lang":"en","className":"h-full","children":[["$","head",null,{"children":[["$","link",null,{"rel":"preconnect","href":"https://fonts.googleapis.com"}],["$","link",null,{"rel":"preconnect","href":"https://fonts.gstatic.com","crossOrigin":"anonymous"}]]}],["$","body",null,{"className":"inter_19e33a27-module__t5xxta__variable font-sans min-h-screen gradient-bg","children":["$","$L2",null,{"children":["$","$L3",null,{"parallelRouterKey":"children","error":"$undefined","errorStyles":"$undefined","errorScripts":"$undefined","template":["$","$L4",null,{}],"templateStyles":"$undefined","templateScripts":"$undefined","notFound":[["$","$L5",null,{}],[]],"forbidden":"$undefined","unauthorized":"$undefined"}]}]}]]}]]}],{"children":[["$","$1","c",{"children":[null,["$","$L3",null,{"parallelRouterKey":"children","error":"$undefined","errorStyles":"$undefined","errorScripts":"$undefined","template":["$","$L4",null,{}],"templateStyles":"$undefined","templateScripts":"$undefined","notFound":"$undefined","forbidden":"$undefined","unauthorized":"$undefined"}]]}],{"children":[["$","$1","c",{"children":[["$","$L6",null,{"Component":"$7","serverProvidedParams":{"searchParams":{},"params":{},"promises":["$@8","$@9"]}}],[["$","script","script-0",{"src":"/_next/static/chunks/0j8avwmy8el9f.js","async":true,"nonce":"$undefined"}]],["$","$La",null,{"children":["$","$b",null,{"name":"Next.MetadataOutlet","children":"$@c"}]}]]}],{},null,false,null]},null,false,"$@d"]},null,false,null],["$","$1","h",{"children":[null,["$","$Le",null,{"children":"$Lf"}],["$","div",null,{"hidden":true,"children":["$","$L10",null,{"children":["$","$b",null,{"name":"Next.Metadata","children":"$L11"}]}]}],["$","meta",null,{"name":"next-size-adjust","content":""}]]}],false]],"m":"$undefined","G":["$12",[["$","link","0",{"rel":"stylesheet","href":"/_next/static/chunks/0flch-i2r0m3_.css","precedence":"next","crossOrigin":"$undefined","nonce":"$undefined"}]]],"S":true,"h":null,"s":"$undefined","l":"$undefined","p":"$undefined","d":"$undefined","b":"mufex-uLy_Y8OXSGRnuRc"}
+13:[]
+d:"$W13"
+8:{}
+9:"$0:f:0:1:1:children:1:children:0:props:children:0:props:serverProvidedParams:params"
+f:[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}]]
+14:I[27201,["/_next/static/chunks/0s987c6dpavm6.js","/_next/static/chunks/0d3shmwh5_nmn.js"],"IconMark"]
+c:null
+11:[["$","title","0",{"children":"HAQMS - Hospital Appointment & Queue Management"}],["$","meta","1",{"name":"description","content":"Deliberately imperfect queue and scheduling application for assessment purposes."}],["$","link","2",{"rel":"icon","href":"/favicon.ico?favicon.0x3dzn~oxb6tn.ico","sizes":"256x256","type":"image/x-icon"}],["$","$L14","3",{}]]

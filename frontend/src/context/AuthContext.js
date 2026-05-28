@@ -1,36 +1,46 @@
 'use client';
 
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useEffect, useState, useContext } from 'react';
 import { useRouter } from 'next/navigation';
+import { API_BASE_URL } from '@/lib/api';
 
 const AuthContext = createContext();
 
+const readSessionAuth = () => {
+  if (typeof window === 'undefined') {
+    return { token: null, user: null };
+  }
+
+  const storedToken = sessionStorage.getItem('haqms_token');
+  const storedUser = sessionStorage.getItem('haqms_user');
+
+  if (!storedToken || !storedUser) {
+    return { token: null, user: null };
+  }
+
+  try {
+    return {
+      token: storedToken,
+      user: JSON.parse(storedUser),
+    };
+  } catch (e) {
+    console.error('Failed to parse user details from sessionStorage', e);
+    sessionStorage.removeItem('haqms_token');
+    sessionStorage.removeItem('haqms_user');
+    return { token: null, user: null };
+  }
+};
+
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [token, setToken] = useState(null);
+  const [authState, setAuthState] = useState({ token: null, user: null });
+  const { user, token } = authState;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const router = useRouter();
 
-  // HARDCODED API VALUE: Intentionally hardcoding the backend base URL on the frontend!
-  // This violates production standards and prevents simple domain config, but serves as
-  // a perfect exercise for internship candidates to move to environment variables.
-  const API_BASE_URL = 'http://localhost:5000/api';
-
   useEffect(() => {
-    // Check for stored token and user on initialization
-    const storedToken = localStorage.getItem('haqms_token');
-    const storedUser = localStorage.getItem('haqms_user');
-
-    if (storedToken && storedUser) {
-      try {
-        setToken(storedToken);
-        setUser(JSON.parse(storedUser));
-      } catch (e) {
-        console.error('Failed to parse user details from localStorage', e);
-        logout();
-      }
-    }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setAuthState(readSessionAuth());
     setLoading(false);
   }, []);
 
@@ -56,12 +66,10 @@ export const AuthProvider = ({ children }) => {
       const receivedToken = data.data.token;
       const receivedUser = data.data.user;
 
-      // SECURITY ISSUE: Storing sensitive auth credentials directly in LocalStorage!
-      localStorage.setItem('haqms_token', receivedToken);
-      localStorage.setItem('haqms_user', JSON.stringify(receivedUser));
+      sessionStorage.setItem('haqms_token', receivedToken);
+      sessionStorage.setItem('haqms_user', JSON.stringify(receivedUser));
 
-      setToken(receivedToken);
-      setUser(receivedUser);
+      setAuthState({ token: receivedToken, user: receivedUser });
 
       router.push('/dashboard');
       return { success: true };
@@ -105,10 +113,9 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem('haqms_token');
-    localStorage.removeItem('haqms_user');
-    setToken(null);
-    setUser(null);
+    sessionStorage.removeItem('haqms_token');
+    sessionStorage.removeItem('haqms_user');
+    setAuthState({ token: null, user: null });
     router.push('/login');
   };
 
@@ -122,7 +129,7 @@ export const AuthProvider = ({ children }) => {
         login,
         register,
         logout,
-        API_BASE_URL, // Exposing hardcoded API base URL for convenience
+        API_BASE_URL,
       }}
     >
       {children}

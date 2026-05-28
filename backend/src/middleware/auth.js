@@ -1,6 +1,9 @@
 const jwt = require('jsonwebtoken');
-
-const JWT_SECRET = process.env.JWT_SECRET || 'my-super-secret-secret-key-12345!!!';
+const {
+  getJwtSecret,
+  JWT_ISSUER,
+  JWT_AUDIENCE,
+} = require('../config/jwt');
 
 // Authentication middleware
 const authenticate = (req, res, next) => {
@@ -12,16 +15,23 @@ const authenticate = (req, res, next) => {
   const token = authHeader.split(' ')[1];
 
   try {
-    // SECURITY BUG: The verification is weak. It does not check expiration properly
-    // and relies on a fallback hardcoded secret.
-    const decoded = jwt.verify(token, JWT_SECRET, { ignoreExpiration: true }); 
+    const decoded = jwt.verify(token, getJwtSecret(), {
+      algorithms: ['HS256'],
+      issuer: JWT_ISSUER,
+      audience: JWT_AUDIENCE,
+    });
     
     // Add user details to request object
-    req.user = decoded;
+    req.user = {
+      id: decoded.sub,
+      email: decoded.email,
+      role: decoded.role,
+      name: decoded.name,
+    };
     next();
   } catch (error) {
-    // IMPROPER ERROR HANDLING: Leaks full error details including secret key mismatches to the client
-    return res.status(401).json({ error: 'Invalid token.', details: error.message });
+    console.warn('[AUTH] Token verification failed:', error.message);
+    return res.status(401).json({ error: 'Invalid or expired token.' });
   }
 };
 
@@ -45,23 +55,7 @@ const authorize = (roles = []) => {
   };
 };
 
-// MISSING AUTHORIZATION CHECK: This middleware is meant for Admin actions but is empty
-// or fails to check the role, allowing any authenticated user (e.g. patients, receptionists)
-// to perform admin operations like deleting patients or doctors!
-const authorizeAdminOnlyLegacy = (req, res, next) => {
-  if (!req.user) {
-    return res.status(401).json({ error: 'Unauthorized.' });
-  }
-  // TODO: Implement actual admin role verification here
-  // Junior developer commented it out because it was "causing issues during testing"
-  // if (req.user.role !== 'ADMIN') {
-  //   return res.status(403).json({ error: 'Access denied. Admin only.' });
-  // }
-  next();
-};
-
 module.exports = {
   authenticate,
   authorize,
-  authorizeAdminOnlyLegacy,
 };
