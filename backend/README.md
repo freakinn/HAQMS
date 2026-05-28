@@ -18,6 +18,17 @@ npm run dev
 ```
 
 ## 🔍 Candidate Scope
+### Production Demo Login Setup
+On Render, run this once from the backend service Shell after configuring `DATABASE_URL`:
+```bash
+npm run db:deploy:setup
+```
+
+Demo accounts use password `password123`:
+- `admin@haqms.com`
+- `reception1@haqms.com`
+- `doctor1@haqms.com`
+
 Analyze, profile, secure, and refactor files inside `src/` and `prisma/`:
 - **SQL Injection**: Resolve raw interpolation queries in `src/routes/doctors.js`.
 - **N+1 Database Queries**: Optimize appointments aggregation inside `src/routes/appointments.js`.
